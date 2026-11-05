@@ -12,11 +12,20 @@
 
 use HiEvents\DomainObjects\Enums\PaymentProviders;
 use HiEvents\Services\Domain\Payment\Gateway\Offline\OfflinePaymentGateway;
+use HiEvents\Services\Domain\Payment\Gateway\PayU\PayuGateway;
 
 return [
     'payment_gateways' => [
         PaymentProviders::OFFLINE->value => OfflinePaymentGateway::class,
-        // PayU: registered here once the adapter lands (see CHANGES.md "Planned").
+        PaymentProviders::PAYU->value => PayuGateway::class,
         // Stripe: wrapped in the same contract before it can be registered here.
+    ],
+
+    'payu' => [
+        'pos_id' => env('PAYU_POS_ID'),
+        'client_id' => env('PAYU_CLIENT_ID'),
+        'client_secret' => env('PAYU_CLIENT_SECRET'),
+        'second_key' => env('PAYU_SECOND_KEY'),
+        'sandbox' => (bool) env('PAYU_SANDBOX', true),
     ],
 ];

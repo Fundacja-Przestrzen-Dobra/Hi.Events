@@ -26,8 +26,33 @@ Modified (upstream files):
   `docker/all-in-one/.env` but not the repository-root `.env`, which our compose files read; without this a
   `cp .env.example .env` followed by `git add -A` would commit live credentials.
 
+## v2 — payment provider layer (branch `feature/payu`, in progress)
+
+Added:
+
+- `backend/app/Services/Domain/Payment/Gateway/` — `PaymentGatewayInterface` (redirect and embedded response shapes),
+  DTOs (payment request/response, status, webhook event with an idempotency key, refund request/result), and
+  `PaymentGatewayRegistry`, which resolves implementations from `config/malzenstwo.php`.
+- `.../Gateway/Offline/OfflinePaymentGateway.php` — the existing offline flow expressed through the same contract.
+- `.../Gateway/PayU/` — `PayuClient` (OAuth `client_credentials`, order creation with amounts in grosze, status, refunds),
+  `PayuGateway` (contract implementation, PLN only) and `PayuWebhookSignatureValidator` (MD5/SHA-256 over the raw body
+  with the POS second key).
+- `backend/config/malzenstwo.php` — provider map plus the `payu` configuration block (`PAYU_*` env vars).
+- `backend/database/migrations/2026_11_05_000001_create_order_payments_table.php` and
+  `..._000002_create_payment_webhook_events_table.php` — provider-agnostic payment records and an idempotent webhook inbox.
+- Unit tests: registry, offline gateway, PayU client status mapping and grosze conversion, webhook signature validation
+  and notification parsing (15 tests). Full upstream Unit suite still passes (2228 tests).
+
+Modified (upstream file):
+
+- `backend/app/DomainObjects/Enums/PaymentProviders.php` — added `PAYU`.
+
+Not yet done in this branch: checkout/routes wiring, applying the new migrations, the frontend redirect step, and the
+fake gateway for CI without a provider.
+
 ## Planned
 
+- Checkout wiring: generic intent/status/webhook routes, order transitions, frontend redirect and return page.
 - Payment-provider layer behind an interface (first implementation: PayU).
 
 ## Bumping the upstream release
