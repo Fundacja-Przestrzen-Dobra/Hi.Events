@@ -51,6 +51,7 @@ class CreatePaymentIntentActionPublic extends BaseAction
             provider: $providerEnum,
             eventId: $eventId,
             buyerIp: $request->ip(),
+            returnBaseUrl: $request->getSchemeAndHttpHost(),
         );
 
         $payment = $gateway->createPayment($paymentRequest);

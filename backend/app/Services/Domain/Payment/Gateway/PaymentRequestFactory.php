@@ -22,6 +22,7 @@ class PaymentRequestFactory
         PaymentProviders $provider,
         int $eventId,
         ?string $buyerIp = null,
+        ?string $returnBaseUrl = null,
     ): CreatePaymentRequestDTO {
         $currency = (string) $order->getCurrency();
         $orderShortId = (string) $order->getShortId();
@@ -38,9 +39,13 @@ class PaymentRequestFactory
             buyerLastName: $order->getLastName(),
             buyerLanguage: $order->getLocale() ?: 'pl',
             buyerIp: $buyerIp,
+            // The buyer returns from the provider in the same browser session, so the
+            // return URL must use the address they are already on — not a host baked
+            // into the configuration, which breaks as soon as the instance is reachable
+            // over more than one address (LAN, VPN, domain).
             returnUrl: sprintf(
                 '%s/checkout/%d/%s/payment_return',
-                rtrim((string) config('app.frontend_url'), '/'),
+                rtrim((string) ($returnBaseUrl ?? config('app.frontend_url')), '/'),
                 $eventId,
                 $orderShortId
             ),
