@@ -82,6 +82,8 @@ Added:
   redirect to PayU's hosted page. The method selector now appears whenever two or more providers are enabled (it used to
   require exactly Stripe+offline).
 - `frontend/src/types.ts` — `PaymentProvider` union gains `PAYU`.
+- `frontend/src/components/routes/event/Settings/Sections/PaymentSettings/index.tsx` — PayU added to the organizer's
+  payment-method options, so a provider that the backend already supports can actually be enabled per event.
 
 The return page needed no PayU branch: `PaymentReturn` already polls the order and navigates to the summary when
 `order.status === COMPLETED`, which the webhook produces through the shared mark-as-paid transition.

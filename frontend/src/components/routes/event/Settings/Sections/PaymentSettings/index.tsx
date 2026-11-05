@@ -97,6 +97,11 @@ export const PaymentAndInvoicingSettings = () => {
             description: t`Accept credit card payments with Stripe`
         },
         {
+            value: "PAYU",
+            label: t`PayU`,
+            description: t`Redirect buyers to PayU for card, BLIK and bank transfer payments (PLN only)`
+        },
+        {
             value: "OFFLINE",
             label: t`Offline Payments`,
             description: t`Accept bank transfers, checks, or other offline payment methods`
