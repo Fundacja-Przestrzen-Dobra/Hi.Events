@@ -1,0 +1,49 @@
+# Production stack for zapisy.malzenstwo.org (Fundacja Przestrzeń Dobra).
+# Pinned to the upstream release we run — see CHANGES.md before changing the image tag.
+# The app listens on 127.0.0.1:8080 and is meant to sit behind the TLS reverse proxy.
+services:
+  app:
+    image: daveearley/hi.events-all-in-one:v2.0.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    env_file:
+      - .env
+    volumes:
+      - app_storage:/app/backend/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redisdata:/data
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:      # database — back this up
+  redisdata:
+  app_storage: # uploaded files (event images, ticket designs) — back this up

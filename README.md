@@ -1,3 +1,8 @@
+> [!NOTE]
+> **This is the Fundacja Przestrzeń Dobra deployment fork** (Małżeństwo.org event registrations), pinned to the
+> `v2.0.0` release. Our deployment files, licence obligations and how to run it: [`DEPLOYMENT.md`](DEPLOYMENT.md);
+> the delta against upstream: [`CHANGES.md`](CHANGES.md). Upstream project: [HiEventsDev/hi.events](https://github.com/HiEventsDev/hi.events).
+
 <div align="center">
 
 <img src=".github/assets/readme-banner.png" alt="Hi.Events - Open-source event ticketing and management platform" width="100%">

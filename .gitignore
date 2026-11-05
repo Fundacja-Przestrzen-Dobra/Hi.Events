@@ -34,3 +34,8 @@ test_results/
 /release-notes.md
 
 .amp/portals/*
+
+# Fundacja deployment: our compose files read .env from the repository root.
+# Real values must never be committed (.env.example is the template).
+/.env
+/.env.local
