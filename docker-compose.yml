@@ -3,7 +3,11 @@
 # The app listens on 127.0.0.1:8080 and is meant to sit behind the TLS reverse proxy.
 services:
   app:
-    image: daveearley/hi.events-all-in-one:v2.0.0
+    # Built from this fork: the image has to contain our payment modules (see CHANGES.md).
+    build:
+      context: .
+      dockerfile: Dockerfile.all-in-one
+    image: hi.events-malzenstwo:v2.0.0-payu
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:80"

@@ -9,8 +9,12 @@ RUN yarn config set network-timeout 600000
 
 COPY ./frontend/package.json ./frontend/yarn.lock ./
 
-COPY ./frontend .
+COPY ./frontend ./
 COPY ./VERSION /app/VERSION
+
+# The production bundle needs more heap than Node's default in a build container
+# (the vite client pass otherwise dies with "Ineffective mark-compacts near heap limit").
+ENV NODE_OPTIONS=--max-old-space-size=7168
 
 RUN yarn install --network-timeout 600000 --frozen-lockfile && yarn build
 

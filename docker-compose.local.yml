@@ -5,7 +5,11 @@
 # Mailpit: http://<host-lan-ip>:8627
 services:
   app:
-    image: daveearley/hi.events-all-in-one:v2.0.0
+    # Built from this fork: the image has to contain our payment modules (see CHANGES.md).
+    build:
+      context: .
+      dockerfile: Dockerfile.all-in-one
+    image: hi.events-malzenstwo:v2.0.0-payu
     restart: unless-stopped
     ports:
       - "0.0.0.0:8810:80"

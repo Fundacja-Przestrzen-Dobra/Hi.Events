@@ -14,3 +14,11 @@ fly.toml
 
 frontend/.env*
 backend/.env*
+
+# Installed/built locally: the image installs and builds its own dependencies, and
+# shipping these in the build context only slows the build down (and can leak a
+# developer's local node_modules into the image).
+frontend/node_modules
+frontend/dist
+backend/vendor
+backend/node_modules

@@ -11,8 +11,9 @@ unavoidable; every change to an upstream file is listed here with its reason, so
 
 Added:
 
-- `docker-compose.yml` — production stack: application (`daveearley/hi.events-all-in-one:v2.0.0`), PostgreSQL 17,
-  Redis 7, volumes for the database and uploaded files; app port bound to `127.0.0.1:8080` for a TLS reverse proxy.
+- `docker-compose.yml` — production stack: application (built from this fork as `hi.events-malzenstwo:v2.0.0-payu`, see
+  v6), PostgreSQL 17, Redis 7, volumes for the database and uploaded files; app port bound to `127.0.0.1:8080` for a TLS
+  reverse proxy.
 - `docker-compose.local.yml` — local stack: same plus Mailpit (e-mail preview), app on `0.0.0.0:8810`.
 - `.env.example` — every required variable with placeholder values.
 - `DEPLOYMENT.md` — fork description, branch layout, running it, licence and attribution obligations.
@@ -88,10 +89,12 @@ Added:
 The return page needed no PayU branch: `PaymentReturn` already polls the order and navigates to the summary when
 `order.status === COMPLETED`, which the webhook produces through the shared mark-as-paid transition.
 
-Verification: `tsc --noEmit` clean across the frontend. `vite build` cannot run in this checkout — a fresh
-`npm install` (the tag ships no lockfile) resolves `@swc/core` versions incompatible with the pinned
-`@lingui/swc-plugin` wasm, which fails on `entry.client.tsx` before our code is touched. Typechecking is the available
-gate until the build runs in the project's own Docker toolchain.
+Verification: `tsc --noEmit` clean across the frontend, and the production bundle builds — with the project's own
+toolchain: **yarn with the committed `yarn.lock`** (`yarn install --frozen-lockfile && yarn build` under Node 22). Note
+that `npm install` in this repository is a dead end (it ignores the lockfile, resolves `@swc/core` versions incompatible
+with the pinned `@lingui/swc-plugin` wasm, and then fails on `entry.client.tsx`), and the vite client pass needs a raised
+heap (`NODE_OPTIONS=--max-old-space-size=7168`, set in `Dockerfile.all-in-one`) — with Node's default it dies with
+"Ineffective mark-compacts near heap limit".
 
 ## v5 — sandbox contract verification (branch `feature/payu`)
 
@@ -106,10 +109,34 @@ parameter when a bare 302 carries no body. Error messages now include the HTTP s
 Tests: 16 unit tests (a 302/`Location` regression test was added) and the 5 webhook feature tests remain green; the
 upstream Unit suite is green at 2229 tests.
 
+## v6 — settling a payment without a webhook, and an image built from this fork
+
+Added:
+
+- `GetPaymentStatusActionPublic` accepts `?verify=1`: for every outstanding payment it asks the provider for the current
+  status and, when the provider reports the payment as settled, applies the same mark-as-paid transition the webhook uses.
+  This is the fallback for a webhook that never arrived — and the only path that works locally, where a provider cannot
+  reach an instance on a private network. A payment already applied is never applied twice, and a provider that cannot
+  be reached never turns the checkout poll into an error.
+- `frontend/src/queries/useGetOrderPaymentStatusPublic.ts`; `PaymentReturn` now uses it instead of the Stripe-specific
+  intent fallback. After the short wait the page asks the backend to verify with the provider, and only reports a
+  failure when the provider does not confirm either.
+
+Modified (upstream files):
+
+- `Dockerfile.all-in-one` — raises the Node heap for the frontend build (see v4).
+- `.dockerignore` — excludes `frontend/node_modules`, `frontend/dist`, `backend/vendor`, `backend/node_modules` from the
+  build context: the image installs its own dependencies, and shipping a developer's local tree slows the build down.
+- `docker-compose.yml` / `docker-compose.local.yml` — the app service now **builds** `hi.events-malzenstwo:v2.0.0-payu`
+  from this fork instead of pulling the upstream image. The upstream image does not contain our payment modules, so
+  pulling it would silently run code without PayU.
+
 ## Planned
 
-- Checkout wiring: generic intent/status/webhook routes, order transitions, frontend redirect and return page.
-- Payment-provider layer behind an interface (first implementation: PayU).
+- Webhook delivery in staging/production: needs a publicly reachable `notifyUrl` (the VPS deployment provides it).
+- Polish translations for the checkout screens: the new labels are Polish already, the rest of the upstream checkout is
+  English; the locale catalogues were left untouched to keep this fork's diff small.
+- Bumping the pinned upstream release (see below).
 
 ## Bumping the upstream release
 
