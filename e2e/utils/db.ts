@@ -16,6 +16,8 @@ const defaultTarget = (): DbTarget => isDevStack()
   ? { composeFile: repoPath('docker/development/docker-compose.dev.yml'), user: 'username', database: 'backend' }
   : { composeFile: repoPath('docker/e2e/docker-compose.e2e.yml'), user: 'hievents', database: 'hievents_e2e' };
 
+const dbService = (): string => process.env.E2E_DB_SERVICE ?? 'pgsql';
+
 function dbTarget(): DbTarget {
   const defaults = defaultTarget();
   return {
@@ -29,7 +31,7 @@ function runSql(sql: string): string {
   const { composeFile, user, database } = dbTarget();
   return execFileSync(
     'docker',
-    ['compose', '-f', composeFile, 'exec', '-T', 'pgsql', 'psql', '-U', user, '-d', database, '-v', 'ON_ERROR_STOP=1', '-qtA', '-c', sql],
+    ['compose', '-f', composeFile, 'exec', '-T', dbService(), 'psql', '-U', user, '-d', database, '-v', 'ON_ERROR_STOP=1', '-qtA', '-c', sql],
     { encoding: 'utf8' },
   );
 }
@@ -114,4 +116,34 @@ export function expireApiKey(apiKeyId: number): void {
   if (updated === '') {
     throw new Error(`No API key found with id ${apiKeyId}`);
   }
+}
+
+const PROVIDER = /^(PAYU|OFFLINE|STRIPE)$/;
+
+/**
+ * Enables payment methods for an event. The organizer's settings form is exercised by its
+ * own specs; payment specs only need the event to offer the method they pay with.
+ */
+export function enablePaymentProviders(eventId: number, providers: string[]): void {
+  if (!Number.isInteger(eventId) || eventId <= 0) {
+    throw new Error(`invalid event id: ${eventId}`);
+  }
+
+  const values = providers.filter((provider) => PROVIDER.test(provider));
+  if (values.length !== providers.length) {
+    throw new Error(`unsupported provider in ${providers.join(',')}`);
+  }
+
+  const json = `'${JSON.stringify(values)}'::jsonb`;
+  runSql(`update event_settings set payment_providers = ${json} where event_id = ${eventId}`);
+}
+
+/** Attendee statuses of an order, in creation order — used to prove a payment activated them. */
+export function attendeeStatuses(shortId: string): string[] {
+  if (!SHORT_ID.test(shortId)) {
+    throw new Error(`invalid order short id: ${shortId}`);
+  }
+
+  const out = runSql(`select status from attendees where order_id = (select id from orders where short_id = '${shortId}') order by id`);
+  return out.split('\n').map((line) => line.trim()).filter(Boolean);
 }

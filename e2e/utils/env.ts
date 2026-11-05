@@ -10,3 +10,9 @@ export const SUPERADMIN_EMAIL = process.env.E2E_SUPERADMIN_EMAIL ?? 'superadmin@
 export const SUPERADMIN_PASSWORD = process.env.E2E_SUPERADMIN_PASSWORD ?? 'SuperAdminPass123!';
 
 export const cookieDomain = (): string => new URL(BASE_URL).hostname;
+
+// PayU (the payment provider this fork adds). The second key signs notifications, exactly
+// as the provider does in production, so a test can deliver a genuine notification.
+export const PAYU_SECOND_KEY = process.env.PAYU_SECOND_KEY ?? '';
+export const E2E_ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? '';
+export const E2E_ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? '';
