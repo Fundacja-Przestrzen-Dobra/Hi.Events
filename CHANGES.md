@@ -131,6 +131,22 @@ Modified (upstream files):
   from this fork instead of pulling the upstream image. The upstream image does not contain our payment modules, so
   pulling it would silently run code without PayU.
 
+## v7 — first live run: the checkout reaches PayU
+
+Verified in a browser against the running stack: the payment step offers **PayU** and **Przelew** (Stripe is gone),
+"Pay PLN 200.00" redirects to PayU's hosted sandbox page showing the right amount and buyer e-mail, and the order is
+recorded in `order_payments` with status `PENDING`.
+
+That run found two bugs the gateway unit tests could not see, both in the mapping from a stored order to a provider
+request — order items are a domain-object collection (passing them to `array_map` threw a `TypeError`, HTTP 500) and the
+line-item name was read through a non-existent `getName()` instead of `getItemName()`. The mapping now lives in
+`PaymentRequestFactory` with its own unit tests.
+
+Deployment note: the SPA calls the API at `VITE_API_URL_CLIENT`. Opening the app on a host that differs from the one in
+that variable (for example `127.0.0.1` while the variable says the LAN address) makes every API call cross-origin and the
+payment step renders "No payment methods are currently available" — the frontend never gets the event settings. Portal
+links must therefore use the same host the instance is configured with.
+
 ## Planned
 
 - Webhook delivery in staging/production: needs a publicly reachable `notifyUrl` (the VPS deployment provides it).
