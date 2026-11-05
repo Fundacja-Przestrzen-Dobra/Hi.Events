@@ -123,6 +123,7 @@ class GetPaymentStatusActionPublic extends BaseAction
                 $this->markOrderAsPaidHandler->handle(new MarkOrderAsPaidDTO(
                     eventId: (int) $order->event_id,
                     orderId: (int) $order->id,
+                    allowReservedOrder: true,
                 ));
             } catch (Throwable $exception) {
                 // An order that is already paid raises a conflict — a success here.

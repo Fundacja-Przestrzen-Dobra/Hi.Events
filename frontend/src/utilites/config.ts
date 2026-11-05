@@ -12,6 +12,7 @@ export const clientBuildEnv: { [K in ConfigKeys]: string } = {
     'VITE_APP_PRIMARY_COLOR': import.meta.env.VITE_APP_PRIMARY_COLOR,
     'VITE_APP_SECONDARY_COLOR': import.meta.env.VITE_APP_SECONDARY_COLOR,
     'VITE_APP_NAME': import.meta.env.VITE_APP_NAME,
+    'VITE_DEFAULT_LOCALE': import.meta.env.VITE_DEFAULT_LOCALE,
     'VITE_APP_FAVICON': import.meta.env.VITE_APP_FAVICON,
     'VITE_APP_LOGO_DARK': import.meta.env.VITE_APP_LOGO_DARK,
     'VITE_APP_LOGO_LIGHT': import.meta.env.VITE_APP_LOGO_LIGHT,

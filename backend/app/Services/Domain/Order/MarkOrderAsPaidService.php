@@ -52,8 +52,9 @@ class MarkOrderAsPaidService
     public function markOrderAsPaid(
         int $orderId,
         int $eventId,
+        bool $allowReservedOrder = false,
     ): OrderDomainObject {
-        return $this->databaseManager->transaction(function () use ($orderId, $eventId) {
+        return $this->databaseManager->transaction(function () use ($orderId, $eventId, $allowReservedOrder) {
             /** @var OrderDomainObject $order */
             $order = $this->orderRepository
                 ->loadRelation(OrderItemDomainObject::class)
@@ -76,7 +77,14 @@ class MarkOrderAsPaidService
                 ]))
                 ->findById($order->getEventId());
 
-            if ($order->getStatus() !== OrderStatus::AWAITING_OFFLINE_PAYMENT->name) {
+            // Offline orders wait for the transfer; an online provider (card, BLIK or a
+            // transfer ordered through the provider) settles an order that is still
+            // RESERVED. The provider's own confirmation is the authority here, so the
+            // caller may allow it.
+            $awaitingOfflinePayment = $order->getStatus() === OrderStatus::AWAITING_OFFLINE_PAYMENT->name;
+            $reservedOnlinePayment = $allowReservedOrder && $order->getStatus() === OrderStatus::RESERVED->name;
+
+            if (! $awaitingOfflinePayment && ! $reservedOnlinePayment) {
                 throw new ResourceConflictException(__('Order is not awaiting offline payment'));
             }
 

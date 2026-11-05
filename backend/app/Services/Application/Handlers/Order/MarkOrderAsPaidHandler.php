@@ -29,6 +29,7 @@ class MarkOrderAsPaidHandler
         return $this->markOrderAsPaidService->markOrderAsPaid(
             $dto->orderId,
             $dto->eventId,
+            $dto->allowReservedOrder,
         );
     }
 }

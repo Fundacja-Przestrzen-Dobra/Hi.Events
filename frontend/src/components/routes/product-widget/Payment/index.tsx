@@ -133,7 +133,7 @@ const Payment = () => {
                     <div style={{display: activePaymentMethod === 'PAYU' ? 'block' : 'none'}}>
                         <Card>
                             <Text size="sm" c="dimmed">
-                                {t`You will be redirected to PayU to complete the payment (card, BLIK or bank transfer).`}
+                                {t`Zapłacisz na stronie PayU — kartą, BLIK-iem albo przelewem online.`}
                             </Text>
                         </Card>
                     </div>
@@ -151,14 +151,16 @@ const Payment = () => {
                             {t`Payment method`}
                         </Text>
                         <div className={classes.paymentMethodTabs}>
-                            <button
-                                type="button"
-                                className={`${classes.paymentMethodTab} ${activePaymentMethod === 'STRIPE' ? classes.active : ''}`}
-                                onClick={() => setActivePaymentMethod('STRIPE')}
-                            >
-                                <IconWallet size={18}/>
-                                <span>{t`Online`}</span>
-                            </button>
+                            {isStripeEnabled && (
+                                <button
+                                    type="button"
+                                    className={`${classes.paymentMethodTab} ${activePaymentMethod === 'STRIPE' ? classes.active : ''}`}
+                                    onClick={() => setActivePaymentMethod('STRIPE')}
+                                >
+                                    <IconWallet size={18}/>
+                                    <span>{t`Online`}</span>
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 className={`${classes.paymentMethodTab} ${activePaymentMethod === 'PAYU' ? classes.active : ''}`}

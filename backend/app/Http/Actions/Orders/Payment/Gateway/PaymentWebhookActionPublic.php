@@ -106,6 +106,7 @@ class PaymentWebhookActionPublic extends BaseAction
             $this->markOrderAsPaidHandler->handle(new MarkOrderAsPaidDTO(
                 eventId: (int) $order->event_id,
                 orderId: (int) $order->id,
+                allowReservedOrder: true,
             ));
         } catch (Throwable $exception) {
             // Already paid orders throw a conflict; that is a success for us.

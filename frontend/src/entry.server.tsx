@@ -7,7 +7,7 @@ import {dehydrate, QueryClient} from "@tanstack/react-query";
 import {router} from "./router";
 import {App} from "./App";
 import {createStaticHandler, createStaticRouter, StaticRouterProvider} from "react-router";
-import {dynamicActivateLocale, getSupportedLocale, toIntlLocale} from "./locales.ts";
+import {dynamicActivateLocale, getDefaultLocale, getSupportedLocale, toIntlLocale} from "./locales.ts";
 import {embedLocaleForPath} from "./utilites/embedLocale.ts";
 import {SsrRequestContext, setSsrRequestContextProvider} from "./utilites/ssrRequestContext.ts";
 import {generateThemeColors} from "./utilites/themeColors.ts";
@@ -28,6 +28,12 @@ const getLocale = (req: express.Request): string => {
 
     if (req.cookies.locale) {
         return getSupportedLocale(req.cookies.locale);
+    }
+
+    // Instance default (VITE_DEFAULT_LOCALE) beats the browser's Accept-Language.
+    const defaultLocale = getDefaultLocale();
+    if (defaultLocale) {
+        return defaultLocale;
     }
 
     const acceptLanguage = req.headers['accept-language'];

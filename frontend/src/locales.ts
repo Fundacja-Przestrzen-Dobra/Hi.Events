@@ -25,6 +25,8 @@ export type SupportedLocales =
     | "ja"
     | "fi";
 
+import {getConfig} from "./utilites/config.ts";
+
 export const availableLocales = ["en", "de", "fr", "it", "nl", "pt", "es", "zh-cn", "zh-hk", "pt-br", "vi", "tr", "hu", "pl", "se", "sk", "el", "ko", "ja", "fi"];
 
 export const localeToFlagEmojiMap: Record<SupportedLocales, string> = {
@@ -115,6 +117,14 @@ export const getClientLocale = () => {
             return getSupportedLocale(storedLocale);
         }
 
+        // The visitor's own choice always wins; between the instance default and the
+        // browser's preference the instance wins, because a single-language portal must
+        // not fall back to English just because the visitor's browser is set to it.
+        const configuredDefault = getDefaultLocale();
+        if (configuredDefault) {
+            return configuredDefault;
+        }
+
         return getSupportedLocale(window.navigator.language);
     }
 
@@ -177,6 +187,19 @@ export async function dynamicActivateLocale(locale: string): Promise<string> {
     }
     return locale;
 }
+
+/**
+ * Instance-wide default language (`VITE_DEFAULT_LOCALE`), used when the visitor has not
+ * chosen one. Unset means "no default" and the browser's preference decides.
+ */
+export const getDefaultLocale = (): string | null => {
+    const configured = getConfig("VITE_DEFAULT_LOCALE");
+    if (!configured) {
+        return null;
+    }
+
+    return getSupportedLocale(configured);
+};
 
 export const getSupportedLocale = (userLocale: string) => {
     const normalizedLocale = userLocale.toLowerCase();
