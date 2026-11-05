@@ -285,6 +285,9 @@ use HiEvents\Http\Actions\Orders\Public\CreateOrderActionPublic;
 use HiEvents\Http\Actions\Orders\Public\DownloadOrderInvoicePublicAction;
 use HiEvents\Http\Actions\Orders\Public\GetOrderActionPublic;
 use HiEvents\Http\Actions\Orders\Public\TransitionOrderToOfflinePaymentPublicAction;
+use HiEvents\Http\Actions\Orders\Payment\Gateway\CreatePaymentIntentActionPublic as CreateProviderPaymentIntentActionPublic;
+use HiEvents\Http\Actions\Orders\Payment\Gateway\GetPaymentStatusActionPublic;
+use HiEvents\Http\Actions\Orders\Payment\Gateway\PaymentWebhookActionPublic as ProviderPaymentWebhookActionPublic;
 use HiEvents\Http\Actions\Orders\ResendOrderConfirmationAction;
 use HiEvents\Http\Actions\Organizers\CreateOrganizerAction;
 use HiEvents\Http\Actions\Organizers\DeleteOrganizerAction;
@@ -954,11 +957,18 @@ $router->prefix('/public')->group(
             ->middleware('throttle:public-payment-intent');
         $router->get('/events/{event_id}/order/{order_short_id}/stripe/payment_intent', GetPaymentIntentActionPublic::class);
 
+        // Pluggable payment providers (see config/malzenstwo.php)
+        $router->post('/events/{event_id}/order/{order_short_id}/payments/{provider}/intent', CreateProviderPaymentIntentActionPublic::class)
+            ->middleware('throttle:public-payment-intent');
+        $router->get('/events/{event_id}/order/{order_short_id}/payments/status', GetPaymentStatusActionPublic::class);
+
         // Questions
         $router->get('/events/{event_id}/questions', GetQuestionsPublicAction::class);
 
         // Webhooks
         $router->post('/webhooks/stripe', StripeIncomingWebhookAction::class)
+            ->withoutMiddleware(ThrottleRequests::class.':api');
+        $router->post('/webhooks/payments/{provider}', ProviderPaymentWebhookActionPublic::class)
             ->withoutMiddleware(ThrottleRequests::class.':api');
         $router->post('/webhooks/email-delivery/{provider}', HandleEmailDeliveryWebhookPublicAction::class)
             ->withoutMiddleware(ThrottleRequests::class.':api');

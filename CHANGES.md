@@ -50,6 +50,27 @@ Modified (upstream file):
 Not yet done in this branch: checkout/routes wiring, applying the new migrations, the frontend redirect step, and the
 fake gateway for CI without a provider.
 
+## v3 — checkout wiring (branch `feature/payu`, in progress)
+
+Added:
+
+- `backend/app/Http/Actions/Orders/Payment/Gateway/` — `CreatePaymentIntentActionPublic` (resolves the order, builds the
+  request server-side, never trusts a client amount), `GetPaymentStatusActionPublic` (checkout polling) and
+  `PaymentWebhookActionPublic` (single endpoint for every provider: verify signature → store in the idempotent inbox →
+  apply → mark processed; a duplicate delivery returns `duplicate` and changes nothing).
+- `tests/Support/FakePaymentGateway.php` — in-memory gateway so the whole pipeline runs without a live provider.
+- `tests/Feature/Payments/PaymentWebhookTest.php` — 5 feature tests against a real database: invalid signature rejected
+  (401, nothing stored), valid notification stored and processed, duplicate delivery idempotent, unknown provider and
+  offline webhooks rejected, status endpoint 404 for an unknown order.
+
+Modified (upstream file):
+
+- `backend/routes/api.php` — three public routes: `POST .../payments/{provider}/intent`,
+  `GET .../payments/status`, `POST /webhooks/payments/{provider}`.
+
+Note for tests: nginx rewrites `/api(/.*)` to `/index.php$1`, so application routes are registered without the `/api`
+prefix — feature tests must call `/public/...`, not `/api/public/...`.
+
 ## Planned
 
 - Checkout wiring: generic intent/status/webhook routes, order transitions, frontend redirect and return page.
