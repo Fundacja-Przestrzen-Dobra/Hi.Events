@@ -167,11 +167,30 @@ Also in this change:
   (`show_quantity_remaining` / `show_available_occurrence_capacity`); `999999999` means
   "no limit". The portal's catalogue reads it, so cards show how many places are left.
 
+## v9 — our branding, one section per event, and a readable weekend
+
+- **Favicon and web-app icon** are ours (`frontend/public/manifest-icons/*`, rendered from the
+  portal's mark), and `site.webmanifest` carries our name and accent colour. The licence
+  (`LICENCE`, first 11 lines) protects one thing only — the visible "Powered by Hi.Events"
+  attribution in the footer of pages and e-mails, linked to https://hi.events — and never
+  mentions icons, the logo or colours. That attribution stays exactly where it was.
+- **One section per event.** Each run of the example-events script used to create a fresh
+  "Zapisy" category, so the event page grew a second, empty one next to an empty "Bilety";
+  the catalogue became "Bilety / Brak dostępnych biletów / Zapisy / Brak dostępnych produktów".
+  The script now reuses a category named "Zapisy" when one exists, and empty "Bilety" categories
+  are hidden on our events.
+- **A weekend no longer reads as one evening.** For a range that crosses midnight the end used
+  to be printed as "15. lut 14:00" beside the start's full day, so "sobota, 13 lutego 2027 ·
+  17:00 – 15. lut 14:00" was easy to misread. The end now carries its own day: "17:00 –
+  poniedziałek, 15 lutego 2027, 14:00".
+- **`pl` catalogue**: "Tickets" is "Zapisy" (the event page's own region label), so no screen
+  mixes "bilety" with "zapisy". The remaining catalogue is still untouched upstream text.
+
 ## Planned
 
 - Webhook delivery in staging/production: needs a publicly reachable `notifyUrl` (the VPS deployment provides it).
 - Polish translations for the checkout screens: the new labels are Polish already, the rest of the upstream checkout is
-  English; the locale catalogues were left untouched to keep this fork's diff small.
+  English; the locale catalogues are only patched where our wording differs (see v9).
 - Bumping the pinned upstream release (see below).
 
 ## Bumping the upstream release

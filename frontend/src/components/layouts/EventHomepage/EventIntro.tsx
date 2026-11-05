@@ -167,7 +167,11 @@ const TimeRange = ({start, end, tz}: { start: string, end: string | null, tz: st
         return <>{startTime} {zoneLabel}</>;
     }
 
-    const endLabel = formatDateWithLocale(end, isSameDayInTimezone(start, end, tz) ? 'timeOnly' : 'dayMonthTime', tz);
+    // A range that crosses midnight gets the end's own day spelled out in full: "17:00 – 15. lut
+    // 14:00" makes a weekend look like a single evening when the start's day is only in the title.
+    const endLabel = isSameDayInTimezone(start, end, tz)
+        ? formatDateWithLocale(end, 'timeOnly', tz)
+        : `${formatLongDay(end, tz)}, ${formatDateWithLocale(end, 'timeOnly', tz)}`;
 
     return <>{startTime} – {endLabel} {zoneLabel}</>;
 };

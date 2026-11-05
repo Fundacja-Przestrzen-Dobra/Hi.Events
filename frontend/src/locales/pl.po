@@ -19494,7 +19494,7 @@ msgstr "bilety"
 #: src/ee/box-office/components/layouts/BoxOffice/SaleComplete.tsx:111
 #: src/utilites/homepageSections.ts:19
 msgid "Tickets"
-msgstr "Bilety"
+msgstr "Zapisy"
 
 #: src/components/layouts/Event/index.tsx:143
 #: src/components/routes/event/products.tsx:68
