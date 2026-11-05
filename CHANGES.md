@@ -147,6 +147,26 @@ that variable (for example `127.0.0.1` while the variable says the LAN address) 
 payment step renders "No payment methods are currently available" — the frontend never gets the event settings. Portal
 links must therefore use the same host the instance is configured with.
 
+## v8 — a paid online order is completed; instance language
+
+A real sandbox payment exposed the gap: PayU confirmed 700 PLN, the payment row became `PAID`,
+and the order stayed `RESERVED` — the buyer saw "we could not confirm your payment". The shared
+mark-as-paid transition only accepted an order awaiting an offline transfer. It now accepts a
+reserved order when the caller is an online provider (the provider's confirmation is the
+authority): the order becomes `COMPLETED`, attendees `ACTIVE`, and the confirmation e-mail goes
+out. Both the webhook and the verify-on-return path pass the flag.
+
+Also in this change:
+
+- `VITE_DEFAULT_LOCALE` — an instance default language that wins over the browser's
+  Accept-Language but never over the visitor's own choice. Set to `pl` here, so the checkout is
+  Polish for visitors whose browser is not.
+- The dead Stripe tab is no longer rendered in the payment step (it showed up as a useless
+  "Online" option next to PayU), and the PayU notice is Polish.
+- Remaining seats: the registration system publishes the count when the organizer enables it
+  (`show_quantity_remaining` / `show_available_occurrence_capacity`); `999999999` means
+  "no limit". The portal's catalogue reads it, so cards show how many places are left.
+
 ## Planned
 
 - Webhook delivery in staging/production: needs a publicly reachable `notifyUrl` (the VPS deployment provides it).
