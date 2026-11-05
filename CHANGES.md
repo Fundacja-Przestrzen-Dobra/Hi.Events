@@ -91,6 +91,19 @@ Verification: `tsc --noEmit` clean across the frontend. `vite build` cannot run 
 `@lingui/swc-plugin` wasm, which fails on `entry.client.tsx` before our code is touched. Typechecking is the available
 gate until the build runs in the project's own Docker toolchain.
 
+## v5 — sandbox contract verification (branch `feature/payu`)
+
+Verified against the real PayU sandbox (public test POS, `secure.snd.payu.com`): order creation returns an order id and
+a hosted-page URL, `extOrderId` is our order short id, and status retrieval reports `PENDING` for a fresh order.
+
+That run found a real bug, fixed here: PayU answers the redirect flow with **302 + `Location`** and Laravel's HTTP client
+follows redirects by default, so the client received the hosted page instead of the URL. Order creation now disables
+redirect following, reads the URL from the body or the `Location` header, and falls back to the `orderId` query
+parameter when a bare 302 carries no body. Error messages now include the HTTP status and a truncated body.
+
+Tests: 16 unit tests (a 302/`Location` regression test was added) and the 5 webhook feature tests remain green; the
+upstream Unit suite is green at 2229 tests.
+
 ## Planned
 
 - Checkout wiring: generic intent/status/webhook routes, order transitions, frontend redirect and return page.

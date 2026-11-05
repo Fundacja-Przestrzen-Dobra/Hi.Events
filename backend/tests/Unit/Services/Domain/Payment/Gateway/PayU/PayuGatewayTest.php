@@ -71,6 +71,32 @@ class PayuGatewayTest extends TestCase
         });
     }
 
+    public function test_it_reads_the_redirect_url_from_a_302_response(): void
+    {
+        // PayU answers the redirect flow with 302 + Location. The client must not
+        // follow the redirect (a followed request returns the hosted page itself).
+        Http::fake([
+            '*/pl/standard/user/oauth/authorize' => Http::response(['access_token' => 'token-1'], 200),
+            '*/api/v2_1/orders' => Http::response('', 302, [
+                'Location' => 'https://secure.snd.payu.com/pay/?orderId=SANDBOX-1&token=abc',
+            ]),
+        ]);
+
+        $response = $this->gateway()->createPayment(new CreatePaymentRequestDTO(
+            orderId: 11,
+            orderShortId: 'o_REDIRECT1',
+            amount: MoneyValue::fromFloat(100.00, 'PLN'),
+            currencyCode: 'PLN',
+            description: 'Redirect flow',
+            products: [
+                ['name' => 'Udział osoby', 'unitPrice' => MoneyValue::fromFloat(100.00, 'PLN'), 'quantity' => 1],
+            ],
+        ));
+
+        $this->assertTrue($response->requiresRedirect());
+        $this->assertSame('https://secure.snd.payu.com/pay/?orderId=SANDBOX-1&token=abc', $response->redirectUrl);
+    }
+
     public function test_it_parses_a_completed_notification_into_a_paid_event(): void
     {
         $body = json_encode([

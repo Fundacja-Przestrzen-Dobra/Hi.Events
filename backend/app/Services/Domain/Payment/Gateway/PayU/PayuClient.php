@@ -74,7 +74,11 @@ class PayuClient
             ], static fn ($value) => $value !== null && $value !== '');
         }
 
-        $response = $this->client()->post('/api/v2_1/orders', $payload);
+        // PayU answers the redirect flow with 302 + Location: <hosted page>. Do not
+        // follow it here — we need the URL to send the buyer to, not the page itself.
+        $response = $this->client()
+            ->withOptions(['allow_redirects' => false])
+            ->post('/api/v2_1/orders', $payload);
 
         // PayU answers 302 with the hosted-page URL in the Location header for the
         // redirect flow; some configurations return 201 with redirectUri in the body.
@@ -82,10 +86,18 @@ class PayuClient
         $redirectUri = $body['redirectUri'] ?? $response->header('Location');
         $orderId = $body['orderId'] ?? null;
 
+        // A bare 302 carries the order id in the hosted-page query string only.
+        if ($orderId === null && is_string($redirectUri) && $redirectUri !== '') {
+            parse_str((string) parse_url($redirectUri, PHP_URL_QUERY), $query);
+            $orderId = $query['orderId'] ?? null;
+        }
+
         if ($orderId === null || $redirectUri === null || $redirectUri === '') {
-            throw new RuntimeException(
-                'PayU did not return an order id and redirect URL: ' . $response->body()
-            );
+            throw new RuntimeException(sprintf(
+                'PayU did not return an order id and redirect URL (HTTP %d): %s',
+                $response->status(),
+                mb_substr(strip_tags($response->body()), 0, 300)
+            ));
         }
 
         return new CreatePaymentResponseDTO(
