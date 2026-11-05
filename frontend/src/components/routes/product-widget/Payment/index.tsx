@@ -34,7 +34,9 @@ const Payment = () => {
     const [submitHandler, setSubmitHandler] = useState<(() => Promise<void>) | null>(null);
     const transitionOrderToOfflinePaymentMutation = useTransitionOrderToOfflinePaymentPublic();
 
-    const isStripeEnabled = event?.settings?.payment_providers?.includes('STRIPE');
+    // This deployment offers PayU (online) and direct bank transfer only. Stripe is
+    // not offered in the UI; its code path stays in place but unreachable.
+    const isStripeEnabled = false;
     const isPayuEnabled = event?.settings?.payment_providers?.includes('PAYU');
     const isOfflineEnabled = event?.settings?.payment_providers?.includes('OFFLINE');
     const enabledPaymentMethodCount = [isStripeEnabled, isPayuEnabled, isOfflineEnabled].filter(Boolean).length;
@@ -171,7 +173,7 @@ const Payment = () => {
                                 onClick={() => setActivePaymentMethod('OFFLINE')}
                             >
                                 <IconBuildingBank size={18}/>
-                                <span>{t`Offline`}</span>
+                                <span>{t`Przelew`}</span>
                             </button>
                         </div>
                     </div>
