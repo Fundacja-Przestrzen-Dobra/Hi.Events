@@ -3,7 +3,7 @@ import {useNavigate, useParams} from "react-router";
 import {useEffect, useRef, useState} from "react";
 import classes from './PaymentReturn.module.scss';
 import {t} from "@lingui/macro";
-import {useGetOrderStripePaymentIntentPublic} from "../../../../queries/useGetOrderStripePaymentIntentPublic.ts";
+import {useGetOrderPaymentStatusPublic} from "../../../../queries/useGetOrderPaymentStatusPublic.ts";
 import {CheckoutContent} from "../../../layouts/Checkout/CheckoutContent";
 import {eventCheckoutPath} from "../../../../utilites/urlHelper.ts";
 import {HomepageInfoMessage} from "../../../common/HomepageInfoMessage";
@@ -12,10 +12,11 @@ import {trackEvent, AnalyticsEvents} from "../../../../utilites/analytics.ts";
 
 /**
  * This component is responsible for handling the return from the payment provider.
- * Stripe should send a webhook to the backend to update the order status to 'COMPLETED'
- * However, if this fails, we will poll the order status to check if the payment has been processed.
- * This is a rare occurrence, but we should handle it gracefully.
- * It will also make local development easier in times when the webhook is not configured correctly.
+ * The provider sends a webhook to the backend, which moves the order to 'COMPLETED'.
+ * If the webhook is delayed or never arrives, we poll the order status and, once the
+ * short wait is over, ask the backend to verify the payment with the provider
+ * (`verify=1`). The backend settles the order through the same transition the webhook
+ * uses, so a payment is never applied twice.
  **/
 export const PaymentReturn = () => {
     const [shouldPoll, setShouldPoll] = useState(true);
@@ -23,7 +24,7 @@ export const PaymentReturn = () => {
     const {data: order} = usePollGetOrderPublic(eventId, orderShortId, shouldPoll, ['event']);
     const navigate = useNavigate();
     const [attemptManualConfirmation, setAttemptManualConfirmation] = useState(false);
-    const paymentIntentQuery = useGetOrderStripePaymentIntentPublic(eventId, orderShortId, attemptManualConfirmation);
+    const paymentStatusQuery = useGetOrderPaymentStatusPublic(eventId, orderShortId, attemptManualConfirmation);
     const [cannotConfirmPayment, setCannotConfirmPayment] = useState(false);
     const hasTrackedPurchase = useRef(false);
 
@@ -42,23 +43,24 @@ export const PaymentReturn = () => {
     );
 
     useEffect(() => {
-        if (!paymentIntentQuery.isFetched) {
+        if (!paymentStatusQuery.isFetched) {
             return;
         }
-        if (paymentIntentQuery.data?.status === 'succeeded') {
+        if (paymentStatusQuery.data?.order_status === 'COMPLETED') {
             if (!hasTrackedPurchase.current && order) {
                 hasTrackedPurchase.current = true;
                 const totalCents = Math.round((order.total_gross || 0) * 100);
                 trackEvent(AnalyticsEvents.PURCHASE_COMPLETED_PAID, { value: totalCents });
             }
             navigate(eventCheckoutPath(eventId, orderShortId, 'summary'));
-        } else {
-            // At this point we've tried multiple times to confirm the payment and failed.
-            // This could be due to a network error on our end, or a problem with the payment provider (Stripe).
-            // This should be a rare occurrence, but we should handle it gracefully.
+            return;
+        }
+        if (attemptManualConfirmation) {
+            // The provider did not confirm the payment either — show the failure state
+            // instead of waiting forever. A later webhook can still complete the order.
             setCannotConfirmPayment(true);
         }
-    }, [paymentIntentQuery.isFetched]);
+    }, [paymentStatusQuery.isFetched, paymentStatusQuery.data, attemptManualConfirmation]);
 
     useEffect(() => {
         if (isSsr() || !order) {
@@ -86,8 +88,8 @@ export const PaymentReturn = () => {
                         status="processing"
                         message={(
                             <>
-                                {(!shouldPoll && paymentIntentQuery.isFetched) && t`We could not process your payment. Please try again or contact support.`}
-                                {(!shouldPoll && !paymentIntentQuery.isFetched) && t`Almost there! We're just waiting for your payment to be processed. This should only take a few seconds.`}
+                                {(!shouldPoll && paymentStatusQuery.isFetched) && t`We could not process your payment. Please try again or contact support.`}
+                                {(!shouldPoll && !paymentStatusQuery.isFetched) && t`Almost there! We're just waiting for your payment to be processed. This should only take a few seconds.`}
                                 {shouldPoll && t`We're processing your order. Please wait...`}
                             </>
                         )}

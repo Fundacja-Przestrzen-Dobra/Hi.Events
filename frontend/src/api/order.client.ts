@@ -181,11 +181,12 @@ export const orderClientPublic = {
         return response.data;
     },
 
-    findProviderPaymentStatus: async (eventId: IdParam, orderShortId: IdParam) => {
+    findProviderPaymentStatus: async (eventId: IdParam, orderShortId: IdParam, verify: boolean = false) => {
         const response = await publicApi.get<GenericDataResponse<{
             order_short_id: string;
             order_status: string;
             payment_status: string | null;
+            verified: boolean;
             payments: Array<{
                 provider: string;
                 provider_reference: string;
@@ -193,7 +194,9 @@ export const orderClientPublic = {
                 amount: string;
                 currency: string;
             }>;
-        }>>(`events/${eventId}/order/${orderShortId}/payments/status`);
+        }>>(`events/${eventId}/order/${orderShortId}/payments/status`, {
+            params: verify ? {verify: 1} : undefined,
+        });
         return response.data;
     },
 
