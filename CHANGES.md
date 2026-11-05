@@ -71,6 +71,26 @@ Modified (upstream file):
 Note for tests: nginx rewrites `/api(/.*)` to `/index.php$1`, so application routes are registered without the `/api`
 prefix — feature tests must call `/public/...`, not `/api/public/...`.
 
+## v4 — frontend checkout (branch `feature/payu`)
+
+Added:
+
+- `frontend/src/api/order.client.ts` — `createProviderPaymentIntent` and `findProviderPaymentStatus` (provider-agnostic
+  checkout calls against the new endpoints).
+- `frontend/src/components/routes/product-widget/Payment/index.tsx` — `PAYU` as a payment method: auto-selected when
+  enabled, tab in the selector when more than one provider is enabled, and submit → intent call → `window.location`
+  redirect to PayU's hosted page. The method selector now appears whenever two or more providers are enabled (it used to
+  require exactly Stripe+offline).
+- `frontend/src/types.ts` — `PaymentProvider` union gains `PAYU`.
+
+The return page needed no PayU branch: `PaymentReturn` already polls the order and navigates to the summary when
+`order.status === COMPLETED`, which the webhook produces through the shared mark-as-paid transition.
+
+Verification: `tsc --noEmit` clean across the frontend. `vite build` cannot run in this checkout — a fresh
+`npm install` (the tag ships no lockfile) resolves `@swc/core` versions incompatible with the pinned
+`@lingui/swc-plugin` wasm, which fails on `entry.client.tsx` before our code is touched. Typechecking is the available
+gate until the build runs in the project's own Docker toolchain.
+
 ## Planned
 
 - Checkout wiring: generic intent/status/webhook routes, order transitions, frontend redirect and return page.

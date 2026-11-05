@@ -171,6 +171,32 @@ export const orderClientPublic = {
         return response.data;
     },
 
+    createProviderPaymentIntent: async (eventId: IdParam, orderShortId: IdParam, provider: string) => {
+        const response = await publicApi.post<GenericDataResponse<{
+            provider: string;
+            reference: string;
+            redirect_url: string | null;
+            client_secret: string | null;
+        }>>(`events/${eventId}/order/${orderShortId}/payments/${provider.toLowerCase()}/intent`);
+        return response.data;
+    },
+
+    findProviderPaymentStatus: async (eventId: IdParam, orderShortId: IdParam) => {
+        const response = await publicApi.get<GenericDataResponse<{
+            order_short_id: string;
+            order_status: string;
+            payment_status: string | null;
+            payments: Array<{
+                provider: string;
+                provider_reference: string;
+                status: string;
+                amount: string;
+                currency: string;
+            }>;
+        }>>(`events/${eventId}/order/${orderShortId}/payments/status`);
+        return response.data;
+    },
+
     downloadInvoice: async (eventId: IdParam, orderShortId: IdParam): Promise<Blob> => {
         const response = await publicApi.get(`events/${eventId}/order/${orderShortId}/invoice`, {
             responseType: 'blob',

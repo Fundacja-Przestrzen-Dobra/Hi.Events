@@ -605,7 +605,7 @@ export interface HomepageSection {
     sponsors?: HomepageSectionSponsor[];
 }
 
-export type PaymentProvider = 'STRIPE' | 'OFFLINE';
+export type PaymentProvider = 'STRIPE' | 'PAYU' | 'OFFLINE';
 
 export type AttendeeDetailsCollectionMethod = 'PER_TICKET' | 'PER_ORDER';
 

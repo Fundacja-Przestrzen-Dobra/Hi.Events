@@ -7,7 +7,7 @@ import {StripePaymentMethod} from "./PaymentMethods/Stripe";
 import {OfflinePaymentMethod} from "./PaymentMethods/Offline";
 import {Event} from "../../../../types.ts";
 import {Button, Group, Text} from "@mantine/core";
-import {IconBuildingBank, IconLock, IconWallet} from "@tabler/icons-react";
+import {IconBuildingBank, IconCreditCard, IconLock, IconWallet} from "@tabler/icons-react";
 import {formatCurrency} from "../../../../utilites/currency.ts";
 import {t, Trans} from "@lingui/macro";
 import {useGetOrderPublic} from "../../../../queries/useGetOrderPublic.ts";
@@ -17,6 +17,7 @@ import {
 import {Card} from "../../../common/Card";
 import {InlineOrderSummary} from "../../../common/InlineOrderSummary";
 import {showError} from "../../../../utilites/notifications.tsx";
+import {orderClientPublic} from "../../../../api/order.client.ts";
 import {getConfig} from "../../../../utilites/config.ts";
 import classes from "./Payment.module.scss";
 import {trackEvent, AnalyticsEvents} from "../../../../utilites/analytics.ts";
@@ -29,23 +30,27 @@ const Payment = () => {
     const isLoading = !isOrderFetched;
     const checkoutEvent = order?.event || event;
     const [isPaymentLoading, setIsPaymentLoading] = useState(false);
-    const [activePaymentMethod, setActivePaymentMethod] = useState<'STRIPE' | 'OFFLINE' | null>(null);
+    const [activePaymentMethod, setActivePaymentMethod] = useState<'STRIPE' | 'PAYU' | 'OFFLINE' | null>(null);
     const [submitHandler, setSubmitHandler] = useState<(() => Promise<void>) | null>(null);
     const transitionOrderToOfflinePaymentMutation = useTransitionOrderToOfflinePaymentPublic();
 
     const isStripeEnabled = event?.settings?.payment_providers?.includes('STRIPE');
+    const isPayuEnabled = event?.settings?.payment_providers?.includes('PAYU');
     const isOfflineEnabled = event?.settings?.payment_providers?.includes('OFFLINE');
+    const enabledPaymentMethodCount = [isStripeEnabled, isPayuEnabled, isOfflineEnabled].filter(Boolean).length;
 
     React.useEffect(() => {
         // Automatically set the first available payment method
         if (isStripeEnabled) {
             setActivePaymentMethod('STRIPE');
+        } else if (isPayuEnabled) {
+            setActivePaymentMethod('PAYU');
         } else if (isOfflineEnabled) {
             setActivePaymentMethod('OFFLINE');
         } else {
             setActivePaymentMethod(null); // No methods available
         }
-    }, [isStripeEnabled, isOfflineEnabled]);
+    }, [isStripeEnabled, isPayuEnabled, isOfflineEnabled]);
 
     React.useEffect(() => {
         // Scroll to top when payment page loads
@@ -62,6 +67,22 @@ const Payment = () => {
     const handleSubmit = async () => {
         if (activePaymentMethod === 'STRIPE') {
             handleParentSubmit();
+        } else if (activePaymentMethod === 'PAYU') {
+            setIsPaymentLoading(true);
+
+            try {
+                const response = await orderClientPublic.createProviderPaymentIntent(eventId, orderShortId, 'PAYU');
+                const redirectUrl = response.data?.redirect_url;
+
+                if (!redirectUrl) {
+                    throw new Error('Missing redirect URL');
+                }
+
+                window.location.assign(redirectUrl);
+            } catch (error: any) {
+                setIsPaymentLoading(false);
+                showError(error?.response?.data?.message || t`Could not start the payment. Please try again or contact the event organizer.`);
+            }
         } else if (activePaymentMethod === 'OFFLINE') {
             setIsPaymentLoading(true);
 
@@ -82,7 +103,7 @@ const Payment = () => {
         }
     };
 
-    if (!isStripeEnabled && !isOfflineEnabled && isOrderFetched && isEventFetched) {
+    if (!isStripeEnabled && !isPayuEnabled && !isOfflineEnabled && isOrderFetched && isEventFetched) {
         return (
             <CheckoutContent>
                 <Card>
@@ -106,13 +127,23 @@ const Payment = () => {
                     </div>
                 )}
 
+                {isPayuEnabled && (
+                    <div style={{display: activePaymentMethod === 'PAYU' ? 'block' : 'none'}}>
+                        <Card>
+                            <Text size="sm" c="dimmed">
+                                {t`You will be redirected to PayU to complete the payment (card, BLIK or bank transfer).`}
+                            </Text>
+                        </Card>
+                    </div>
+                )}
+
                 {isOfflineEnabled && (
                     <div style={{display: activePaymentMethod === 'OFFLINE' ? 'block' : 'none'}}>
                         <OfflinePaymentMethod event={checkoutEvent as Event}/>
                     </div>
                 )}
 
-                {(isStripeEnabled && isOfflineEnabled) && (
+                {enabledPaymentMethodCount > 1 && (
                     <div className={classes.paymentMethodSelector}>
                         <Text size="sm" c="dimmed" className={classes.paymentMethodLabel}>
                             {t`Payment method`}
@@ -125,6 +156,14 @@ const Payment = () => {
                             >
                                 <IconWallet size={18}/>
                                 <span>{t`Online`}</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={`${classes.paymentMethodTab} ${activePaymentMethod === 'PAYU' ? classes.active : ''}`}
+                                onClick={() => setActivePaymentMethod('PAYU')}
+                            >
+                                <IconCreditCard size={18}/>
+                                <span>{t`PayU`}</span>
                             </button>
                             <button
                                 type="button"

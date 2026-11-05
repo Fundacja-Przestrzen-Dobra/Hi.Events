@@ -59,7 +59,7 @@ class CreatePaymentIntentActionPublic extends BaseAction
             buyerLastName: $order->getLastName(),
             buyerLanguage: $order->getLocale() ?: 'pl',
             buyerIp: $request->ip(),
-            returnUrl: sprintf('%s/checkout/%d/%s/summary', config('app.frontend_url'), $eventId, $orderShortId),
+            returnUrl: sprintf('%s/checkout/%d/%s/payment_return', config('app.frontend_url'), $eventId, $orderShortId),
             notifyUrl: url(sprintf('/api/public/webhooks/payments/%s', strtolower($providerEnum->value))),
             products: array_map(
                 static fn ($item): array => [
