@@ -186,6 +186,18 @@ Also in this change:
 - **`pl` catalogue**: "Tickets" is "Zapisy" (the event page's own region label), so no screen
   mixes "bilety" with "zapisy". The remaining catalogue is still untouched upstream text.
 
+## Where the end-to-end tests live
+
+They live in the **portal's** repository (`malzenstwo.org/e2e/`), not here: the journey starts at the
+portal, the operator's decisions are made there, and one home means one runner. `e2e/run-e2e.sh` runs
+both specs — the catalogue hand-off, and the whole money path against this instance (seeded event, a
+couple booked, PayU clicked, a provider notification signed with the POS second key, both attendees
+active). Secrets come from `~/.secrets/hievents/e2e.env`, never from the repository.
+
+The e2e files this fork used to carry were removed so the fork stays close to upstream; upstream's own
+suite (`.github/workflows/e2e.yml`, Stripe-based) is switched off on this fork — it cannot pass here,
+because this deployment offers PayU and the direct transfer instead of Stripe.
+
 ## Planned
 
 - Webhook delivery in staging/production: needs a publicly reachable `notifyUrl` (the VPS deployment provides it).
