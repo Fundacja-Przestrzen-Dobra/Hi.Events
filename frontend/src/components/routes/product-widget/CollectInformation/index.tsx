@@ -4,6 +4,7 @@ import {useNavigate, useParams, useSearchParams} from "react-router";
 import {
     Button,
     Checkbox,
+    Divider,
     NativeSelect,
     SegmentedControl,
     Skeleton,
@@ -603,11 +604,16 @@ export const CollectInformation = () => {
                     {orderQuestions && <CheckoutOrderQuestions form={form} questions={orderQuestions}/>}
 
                     {event?.settings?.show_marketing_opt_in && (
-                        <Checkbox
-                            mt="md"
-                            label={t`Keep me updated on news and events from ${event?.organizer?.name || t`this organizer`}`}
-                            {...form.getInputProps('order.opted_into_marketing', {type: 'checkbox'})}
-                        />
+                        <>
+                            {/* A separator matters here: without it the opt-in sits directly under a
+                                required question and its asterisk reads as belonging to this box. */}
+                            <Divider my="lg"/>
+                            <Checkbox
+                                label={t`Keep me updated on news and events from ${event?.organizer?.name || t`this organizer`}`}
+                                description={t`Optional — you can change this at any time.`}
+                                {...form.getInputProps('order.opted_into_marketing', {type: 'checkbox'})}
+                            />
+                        </>
                     )}
                 </Card>
 

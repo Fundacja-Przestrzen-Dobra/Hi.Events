@@ -19517,6 +19517,9 @@ msgstr "Bilety są zawsze widoczne"
 msgid "Tickets are automatically offered to waitlisted customers when capacity becomes available."
 msgstr "Bilety będą automatycznie proponowane klientom z listy oczekujących, gdy pojawi się dostępność."
 
+msgid "Optional — you can change this at any time."
+msgstr "Opcjonalnie — możesz to zmienić w każdej chwili."
+
 #: src/components/routes/product-widget/PrintOrder/index.tsx:49
 msgid "Tickets for"
 msgstr "Bilety dla"

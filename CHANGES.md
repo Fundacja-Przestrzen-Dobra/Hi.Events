@@ -186,6 +186,22 @@ Also in this change:
 - **`pl` catalogue**: "Tickets" is "Zapisy" (the event page's own region label), so no screen
   mixes "bilety" with "zapisy". The remaining catalogue is still untouched upstream text.
 
+## v10 — the instance wears our brand, and an optional box stops looking required
+
+- **Branding comes from the environment, not from code.** The app renders `window.hievents` from the
+  container's `VITE_*` variables at request time, so `VITE_APP_NAME`, `VITE_APP_LOGO_LIGHT`,
+  `VITE_APP_LOGO_DARK`, `VITE_APP_PRIMARY_COLOR`, `VITE_APP_SECONDARY_COLOR`, `VITE_APP_FAVICON`,
+  `VITE_TOS_URL` and `VITE_PRIVACY_URL` in the stack's env file are enough; only the logo files
+  (`frontend/public/logos/malzenstwo-*.svg`) needed this rebuild. The “Powered by Hi.Events”
+  attribution in the footer is untouched, and the terms/privacy links now point at the organizer's
+  own documents instead of hi.events'.
+- **The marketing opt-in no longer reads as mandatory.** It sat directly under the required consent
+  question, so that question's asterisk looked like it belonged to the opt-in: there is now a divider
+  and a Polish “Opcjonalnie — możesz to zmienić w każdej chwili.” beneath the label.
+- Event/page colours live in the database (`event_settings.homepage_*`, `homepage_theme_settings`,
+  `ticket_design_settings`, `organizer_settings.homepage_theme_settings`); they now carry the portal's
+  navy and muted gold, so the public event page matches malzenstwo.org.
+
 ## Where the end-to-end tests live
 
 They live in the **portal's** repository (`malzenstwo.org/e2e/`), not here: the journey starts at the
