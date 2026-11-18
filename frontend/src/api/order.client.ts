@@ -197,6 +197,9 @@ export const orderClientPublic = {
         }>>(`events/${eventId}/order/${orderShortId}/payments/status`, {
             params: verify ? {verify: 1} : undefined,
         });
+        return response.data;
+    },
+
     createPaymentLink: async (eventId: IdParam, orderShortId: IdParam) => {
         const response = await publicApi.post<GenericDataResponse<Order>>(`events/${eventId}/order/${orderShortId}/payment-link`);
         return response.data;
