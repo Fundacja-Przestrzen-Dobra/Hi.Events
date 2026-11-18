@@ -300,3 +300,17 @@ the compose files, add an entry here, push the corresponding source tag to this 
 
 Everything here is covered by [`LICENCE`](LICENCE) (AGPL-3.0 with additional terms, §7b), including our own changes.
 The “Powered by Hi.Events” attribution stays visible on generated pages and e-mails.
+
+## v13 — język instancji pochodzi ze środowiska (2026-11-18)
+
+`backend/config/app.php` miał `'locale' => 'en'` na sztywno, więc `APP_LOCALE` w env był ignorowany,
+a instancja odpowiadała po angielsku każdemu gościowi bez polskich preferencji językowych w
+przeglądarce — przy polskim interfejsie (`VITE_DEFAULT_LOCALE=pl`) i polskim katalogu `pl.po`.
+Widać to było na kroku danych uczestnika: „This field is required." zamiast „To pole jest wymagane."
+(`backend/lang/pl.json` te komunikaty ma, 1507 wpisów).
+
+Zmiana: `'locale' => env('APP_LOCALE', 'en')` i `'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en')`.
+Kolejność wyboru języka na żądanie zostaje upstreamowa (`SetUserLocaleMiddleware`): ciasteczko
+`locale` → język zapisany przy użytkowniku → `Accept-Language`. Zmiana dotyczy więc **tylko
+zachowania domyślnego**, gdy żadne z tych źródeł nic nie mówi — i tylko tego brakowało, żeby
+instancja była konsekwentnie polska.

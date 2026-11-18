@@ -179,7 +179,11 @@ return [
     |
     */
 
-    'locale' => 'en',
+    // Fork: the instance's default language comes from the environment, so a Polish
+    // deployment does not answer a visitor without language preferences in English
+    // (the front already defaults to pl through VITE_DEFAULT_LOCALE). Per-request
+    // language still wins: cookie, then the user's stored locale, then Accept-Language.
+    'locale' => env('APP_LOCALE', 'en'),
 
     /*
     |--------------------------------------------------------------------------
@@ -192,7 +196,7 @@ return [
     |
     */
 
-    'fallback_locale' => 'en',
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
     /*
     |--------------------------------------------------------------------------
