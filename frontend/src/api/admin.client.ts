@@ -35,6 +35,7 @@ export interface AdminAccount {
     timezone?: string;
     currency_code?: string;
     created_at: string;
+    suspended_at: string | null;
     events_count: number;
     users_count: number;
     users: AdminAccountUser[];
@@ -109,6 +110,7 @@ export interface AdminAccountDetail extends AdminAccount {
     messaging_tier?: AccountMessagingTier;
     organizers: AdminOrganizerSummary[];
     is_manually_verified: boolean;
+    suspension_reason: string | null;
     active_deletion_request: {
         id: IdParam;
         scheduled_deletion_at: string;
@@ -117,12 +119,17 @@ export interface AdminAccountDetail extends AdminAccount {
     lifecycle_nudges?: AdminLifecycleNudge[];
 }
 
+export interface AdminSuspendAccountPayload {
+    reason?: string;
+    notify_account_owner: boolean;
+}
+
 export interface AdminRequestAccountDeletionPayload {
     reason?: string;
     execute_immediately: boolean;
 }
 
-export type LifecycleNudgeType = 'NO_EVENT_CREATED' | 'STRIPE_ONBOARDING_INCOMPLETE' | 'EVENT_DRAFT_STALE' | 'LIVE_EVENT_NO_SALES';
+export type LifecycleNudgeType = 'NO_EVENT_CREATED' | 'STRIPE_ONBOARDING_INCOMPLETE' | 'EVENT_DRAFT_STALE' | 'LIVE_EVENT_NO_SALES' | 'LAPSED_PAYER';
 
 export interface LifecycleEmailContent {
     subject: string;
@@ -853,6 +860,16 @@ export const adminClient = {
                 status: params.status || undefined,
             }
         });
+        return response.data;
+    },
+
+    suspendAccount: async (accountId: IdParam, payload: AdminSuspendAccountPayload) => {
+        const response = await api.post<GenericDataResponse<AdminAccountDetail>>(`admin/accounts/${accountId}/suspension`, payload);
+        return response.data;
+    },
+
+    unsuspendAccount: async (accountId: IdParam) => {
+        const response = await api.delete<GenericDataResponse<AdminAccountDetail>>(`admin/accounts/${accountId}/suspension`);
         return response.data;
     },
 

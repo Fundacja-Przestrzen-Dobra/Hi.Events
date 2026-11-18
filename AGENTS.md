@@ -105,6 +105,8 @@ Feature rules live in `.claude/rules/`; Claude Code loads each file automaticall
 | Two-factor authentication | `.claude/rules/backend/two-factor.md` |
 | Single sign-on (OIDC) | `.claude/rules/backend/sso.md` |
 | API keys | `.claude/rules/backend/api-keys.md` |
+| MCP server | `.claude/rules/backend/mcp.md` |
+| OAuth (MCP sign-in) | `.claude/rules/backend/oauth.md` |
 | Abuse & spam | `.claude/rules/backend/abuse-and-spam.md` |
 | Account deletion | `.claude/rules/backend/account-deletion.md` |
 | OpenAPI docs | `.claude/rules/backend/openapi.md` |
@@ -115,6 +117,7 @@ Feature rules live in `.claude/rules/`; Claude Code loads each file automaticall
 | Lineup & schedule | `.claude/rules/features/lineup.md` |
 | Homepage sections | `.claude/rules/features/homepage-sections.md` |
 | Embeddable widget | `.claude/rules/features/widget.md` |
+| Registration questions | `.claude/rules/features/questions.md` |
 | Frontend UI patterns | `.claude/rules/frontend/ui.md` |
 | E2E specs | `.claude/rules/e2e.md` |
 

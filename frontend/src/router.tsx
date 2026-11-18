@@ -85,6 +85,13 @@ export const router: RouteObject[] = [
         ]
     },
     {
+        path: "connect",
+        async lazy() {
+            const Connect = await import("./components/routes/oauth/Connect");
+            return { Component: Connect.default };
+        }
+    },
+    {
         path: "sso/callback",
         async lazy() {
             const SsoCallback = await import("./components/routes/sso/Callback");
@@ -343,6 +350,13 @@ export const router: RouteObject[] = [
                 async lazy() {
                     const ApiReference = await import("./components/routes/settings/ApiReference");
                     return { Component: ApiReference.default };
+                }
+            },
+            {
+                path: "billing",
+                async lazy() {
+                    const Billing = await import("./components/routes/settings/Billing");
+                    return { Component: Billing.default };
                 }
             },
             {

@@ -71,10 +71,15 @@ use HiEvents\Http\Actions\Accounts\DeletionRequest\CancelAccountDeletionAction;
 use HiEvents\Http\Actions\Accounts\DeletionRequest\GetAccountDeletionStatusAction;
 use HiEvents\Http\Actions\Accounts\DeletionRequest\RequestAccountDeletionAction;
 use HiEvents\Http\Actions\Accounts\GetAccountAction;
+use HiEvents\Http\Actions\Accounts\Subscription\CreateSubscriptionCheckoutSessionAction;
+use HiEvents\Http\Actions\Accounts\Subscription\CreateSubscriptionPortalSessionAction;
+use HiEvents\Http\Actions\Accounts\Subscription\GetAccountSubscriptionAction;
 use HiEvents\Http\Actions\Accounts\UpdateAccountAction;
 use HiEvents\Http\Actions\Accounts\UpdateAccountTwoFactorRequirementAction;
 use HiEvents\Http\Actions\Admin\Accounts\GetAccountAction as GetAdminAccountAction;
 use HiEvents\Http\Actions\Admin\Accounts\GetAllAccountsAction as GetAllAdminAccountsAction;
+use HiEvents\Http\Actions\Admin\Accounts\SuspendAccountAction;
+use HiEvents\Http\Actions\Admin\Accounts\UnsuspendAccountAction;
 use HiEvents\Http\Actions\Admin\Accounts\UpdateAccountMessagingTierAction;
 use HiEvents\Http\Actions\Admin\Accounts\UpdateAccountVerificationAction;
 use HiEvents\Http\Actions\Admin\Announcements\CreateAnnouncementAction;
@@ -269,6 +274,17 @@ use HiEvents\Http\Actions\Messages\CancelMessageAction;
 use HiEvents\Http\Actions\Messages\GetMessageRecipientsAction;
 use HiEvents\Http\Actions\Messages\GetMessagesAction;
 use HiEvents\Http\Actions\Messages\SendMessageAction;
+use HiEvents\Http\Actions\OAuth\ApproveOAuthAuthorizationRequestAction;
+use HiEvents\Http\Actions\OAuth\AuthorizeOAuthClientAction;
+use HiEvents\Http\Actions\OAuth\DeleteOAuthConnectionAction;
+use HiEvents\Http\Actions\OAuth\DenyOAuthAuthorizationRequestAction;
+use HiEvents\Http\Actions\OAuth\GetOAuthAuthorizationRequestAction;
+use HiEvents\Http\Actions\OAuth\GetOAuthAuthorizationServerMetadataAction;
+use HiEvents\Http\Actions\OAuth\GetOAuthConnectionsAction;
+use HiEvents\Http\Actions\OAuth\GetOAuthProtectedResourceMetadataAction;
+use HiEvents\Http\Actions\OAuth\IssueOAuthTokenAction;
+use HiEvents\Http\Actions\OAuth\RegisterOAuthClientAction;
+use HiEvents\Http\Actions\OAuth\RevokeOAuthTokenAction;
 use HiEvents\Http\Actions\Orders\CancelOrderAction;
 use HiEvents\Http\Actions\Orders\DownloadOrderInvoiceAction;
 use HiEvents\Http\Actions\Orders\EditOrderAction;
@@ -282,8 +298,10 @@ use HiEvents\Http\Actions\Orders\Payment\Stripe\GetPaymentIntentActionPublic;
 use HiEvents\Http\Actions\Orders\Public\AbandonOrderActionPublic;
 use HiEvents\Http\Actions\Orders\Public\CompleteOrderActionPublic;
 use HiEvents\Http\Actions\Orders\Public\CreateOrderActionPublic;
+use HiEvents\Http\Actions\Orders\Public\CreateOrderPaymentLinkActionPublic;
 use HiEvents\Http\Actions\Orders\Public\DownloadOrderInvoicePublicAction;
 use HiEvents\Http\Actions\Orders\Public\GetOrderActionPublic;
+use HiEvents\Http\Actions\Orders\Public\ReportOfflinePaymentActionPublic;
 use HiEvents\Http\Actions\Orders\Public\TransitionOrderToOfflinePaymentPublicAction;
 use HiEvents\Http\Actions\Orders\Payment\Gateway\CreatePaymentIntentActionPublic as CreateProviderPaymentIntentActionPublic;
 use HiEvents\Http\Actions\Orders\Payment\Gateway\GetPaymentStatusActionPublic;
@@ -405,11 +423,29 @@ use HiEvents\Http\Actions\Widgets\GetOrganizerWidgetsAction;
 use HiEvents\Http\Actions\Widgets\GetWidgetPublicAction;
 use HiEvents\Http\Actions\Widgets\UpdateEventWidgetAction;
 use HiEvents\Http\Actions\Widgets\UpdateOrganizerWidgetAction;
+use HiEvents\Services\Domain\Auth\OAuth\OAuthAuthorizationStore;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Routing\Router;
 
 /** @var Router|Router $router */
 $router = app()->get('router');
+
+$router->middleware('throttle:120,1,oauth-metadata')->group(
+    function (Router $router): void {
+        $router->get('/.well-known/oauth-protected-resource/{path?}', GetOAuthProtectedResourceMetadataAction::class)->where('path', '.*');
+        $router->get('/.well-known/oauth-authorization-server/{path?}', GetOAuthAuthorizationServerMetadataAction::class)->where('path', '.*');
+        $router->get('/.well-known/openid-configuration/{path?}', GetOAuthAuthorizationServerMetadataAction::class)->where('path', '.*');
+    }
+);
+
+$router->prefix('/oauth')->group(
+    function (Router $router): void {
+        $router->post('/register', RegisterOAuthClientAction::class)->middleware('throttle:20,1,oauth-register');
+        $router->get('/authorize', AuthorizeOAuthClientAction::class)->middleware('throttle:30,1,oauth-authorize');
+        $router->post('/token', IssueOAuthTokenAction::class)->middleware('throttle:60,1,oauth-token');
+        $router->post('/revoke', RevokeOAuthTokenAction::class)->middleware('throttle:60,1,oauth-revoke');
+    }
+);
 
 $router->prefix('/auth')->group(
     function (Router $router): void {
@@ -492,6 +528,9 @@ $router->middleware(['auth:api'])->group(
         $router->put('/accounts/{account_id}/sso/enforcement', UpdateSsoEnforcementAction::class)->whereNumber('account_id');
         $router->put('/accounts/{account_id}/sso/members/{account_user_id}', UpdateSsoMemberEnforcementAction::class)->whereNumber(['account_id', 'account_user_id']);
         $router->put('/accounts/{account_id?}', UpdateAccountAction::class)->whereNumber('account_id');
+        $router->get('/accounts/{account_id}/subscription', GetAccountSubscriptionAction::class)->whereNumber('account_id')->middleware('throttle:60,1,account-subscription');
+        $router->post('/accounts/{account_id}/subscription/checkout-session', CreateSubscriptionCheckoutSessionAction::class)->whereNumber('account_id')->middleware('throttle:10,1,account-subscription-checkout');
+        $router->post('/accounts/{account_id}/subscription/portal-session', CreateSubscriptionPortalSessionAction::class)->whereNumber('account_id')->middleware('throttle:20,1,account-subscription-portal');
         $router->get('/organizers/{organizer_id}/team', GetOrganizerTeamAction::class);
         $router->get('/organizers/{organizerId}/stripe/connect_accounts', GetStripeConnectAccountsAction::class);
         $router->post('/organizers/{organizerId}/stripe/connect', CreateStripeConnectAccountAction::class);
@@ -509,6 +548,12 @@ $router->middleware(['auth:api'])->group(
         $router->get('/api-keys', GetApiKeysAction::class);
         $router->post('/api-keys', CreateApiKeyAction::class)->middleware('throttle:10,1,api-key-create');
         $router->delete('/api-keys/{api_key_id}', DeleteApiKeyAction::class)->whereNumber('api_key_id');
+
+        $router->get('/oauth/authorization-requests/{request_id}', GetOAuthAuthorizationRequestAction::class)->where('request_id', OAuthAuthorizationStore::REQUEST_ID_PATTERN);
+        $router->post('/oauth/authorization-requests/{request_id}/approve', ApproveOAuthAuthorizationRequestAction::class)->where('request_id', OAuthAuthorizationStore::REQUEST_ID_PATTERN)->middleware('throttle:10,1,oauth-approve');
+        $router->post('/oauth/authorization-requests/{request_id}/deny', DenyOAuthAuthorizationRequestAction::class)->where('request_id', OAuthAuthorizationStore::REQUEST_ID_PATTERN);
+        $router->get('/oauth/connections', GetOAuthConnectionsAction::class);
+        $router->delete('/oauth/connections/{connection_id}', DeleteOAuthConnectionAction::class)->whereNumber('connection_id');
     }
 );
 
@@ -868,6 +913,10 @@ $router->prefix('/admin')->middleware(['auth:api'])->group(
         // Account Verification
         $router->put('/accounts/{account_id}/verification', UpdateAccountVerificationAction::class);
 
+        // Account Suspension
+        $router->post('/accounts/{account_id}/suspension', SuspendAccountAction::class)->whereNumber('account_id');
+        $router->delete('/accounts/{account_id}/suspension', UnsuspendAccountAction::class)->whereNumber('account_id');
+
         // Feature Flags
         $router->get('/licence', GetLicenceAdminAction::class);
         $router->get('/licence/sales', GetLicenceSalesAdminAction::class);
@@ -937,6 +986,10 @@ $router->prefix('/public')->group(
         $router->get('/events/{event_id}/order/{order_short_id}', GetOrderActionPublic::class);
         $router->post('/events/{event_id}/order/{order_short_id}/abandon', AbandonOrderActionPublic::class);
         $router->post('/events/{event_id}/order/{order_short_id}/await-offline-payment', TransitionOrderToOfflinePaymentPublicAction::class);
+        $router->post('/events/{event_id}/order/{order_short_id}/payment-link', CreateOrderPaymentLinkActionPublic::class)
+            ->middleware('throttle:10,1,public-order-payment-link');
+        $router->post('/events/{event_id}/order/{order_short_id}/report-offline-payment', ReportOfflinePaymentActionPublic::class)
+            ->middleware('throttle:10,1,public-offline-payment-report');
         $router->get('/events/{event_id}/order/{order_short_id}/invoice', DownloadOrderInvoicePublicAction::class);
 
         // Attendees

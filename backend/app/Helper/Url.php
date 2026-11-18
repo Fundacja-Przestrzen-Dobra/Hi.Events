@@ -18,11 +18,15 @@ class Url
 
     public const EVENT_HOMEPAGE = 'app.frontend_urls.event_homepage';
 
+    public const EVENT_PREVIEW = 'app.frontend_urls.event_preview';
+
     public const ATTENDEE_TICKET = 'app.frontend_urls.attendee_product';
 
     public const ORDER_SUMMARY = 'app.frontend_urls.order_summary';
 
     public const ORDER_DETAILS = 'app.frontend_urls.order_details';
+
+    public const ORDER_PAYMENT = 'app.frontend_urls.order_payment';
 
     public const ORGANIZER_ORDER_SUMMARY = 'app.frontend_urls.organizer_order_summary';
 
@@ -38,7 +42,13 @@ class Url
 
     public const ACCOUNT_SETTINGS = 'app.frontend_urls.account_settings';
 
+    public const ACCOUNT_BILLING = 'app.frontend_urls.account_billing';
+
+    public const REGISTER = 'app.frontend_urls.register';
+
     public const EVENT_DASHBOARD = 'app.frontend_urls.event_dashboard';
+
+    public const ORGANIZER_EVENTS = 'app.frontend_urls.organizer_events';
 
     public const WELCOME = 'app.frontend_urls.welcome';
 

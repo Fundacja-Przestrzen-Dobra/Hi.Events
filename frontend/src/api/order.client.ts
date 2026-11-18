@@ -197,6 +197,13 @@ export const orderClientPublic = {
         }>>(`events/${eventId}/order/${orderShortId}/payments/status`, {
             params: verify ? {verify: 1} : undefined,
         });
+    createPaymentLink: async (eventId: IdParam, orderShortId: IdParam) => {
+        const response = await publicApi.post<GenericDataResponse<Order>>(`events/${eventId}/order/${orderShortId}/payment-link`);
+        return response.data;
+    },
+
+    reportOfflinePayment: async (eventId: IdParam, orderShortId: IdParam, note: string | null) => {
+        const response = await publicApi.post<GenericDataResponse<Order>>(`events/${eventId}/order/${orderShortId}/report-offline-payment`, {note});
         return response.data;
     },
 

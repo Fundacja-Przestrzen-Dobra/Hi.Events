@@ -39,3 +39,5 @@ test_results/
 # Real values must never be committed (.env.example is the template).
 /.env
 /.env.local
+
+.cloudflare/

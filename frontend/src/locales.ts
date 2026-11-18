@@ -23,11 +23,12 @@ export type SupportedLocales =
     | "el"
     | "ko"
     | "ja"
-    | "fi";
+    | "fi"
+    | "cs";
 
 import {getConfig} from "./utilites/config.ts";
 
-export const availableLocales = ["en", "de", "fr", "it", "nl", "pt", "es", "zh-cn", "zh-hk", "pt-br", "vi", "tr", "hu", "pl", "se", "sk", "el", "ko", "ja", "fi"];
+export const availableLocales = ["en", "de", "fr", "it", "nl", "pt", "es", "zh-cn", "zh-hk", "pt-br", "vi", "tr", "hu", "pl", "se", "sk", "el", "ko", "ja", "fi", "cs"];
 
 export const localeToFlagEmojiMap: Record<SupportedLocales, string> = {
     en: '🇬🇧',
@@ -50,6 +51,7 @@ export const localeToFlagEmojiMap: Record<SupportedLocales, string> = {
     ko: '🇰🇷',
     ja: '🇯🇵',
     fi: '🇫🇮',
+    cs: '🇨🇿',
 };
 
 export const getLocaleName = (locale: SupportedLocales): string => {
@@ -94,6 +96,8 @@ export const getLocaleName = (locale: SupportedLocales): string => {
             return t`Japanese`;
         case "fi":
             return t`Finnish`;
+        case "cs":
+            return t`Czech`;
         default:
             return locale;
     }
@@ -168,6 +172,7 @@ const dayjsLocaleLoaders: Partial<Record<SupportedLocales, () => Promise<unknown
     ko: () => import("dayjs/locale/ko"),
     ja: () => import("dayjs/locale/ja"),
     fi: () => import("dayjs/locale/fi"),
+    cs: () => import("dayjs/locale/cs"),
 };
 
 export async function dynamicActivateLocale(locale: string): Promise<string> {
