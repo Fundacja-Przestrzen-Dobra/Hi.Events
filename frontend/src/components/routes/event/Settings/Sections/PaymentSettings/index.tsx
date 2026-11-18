@@ -53,7 +53,7 @@ export const PaymentAndInvoicingSettings = () => {
                 ? (isEmptyHtml(values.offline_payment_instructions) ? null : values.offline_payment_instructions)
                 : (eventSettingsQuery.data?.offline_payment_instructions ?? null),
             payment_link_expiry_hours: values.payment_link_expiry_hours === ''
-                && !(values.payment_links_enabled && values.payment_providers.includes('STRIPE'))
+                && !(values.payment_links_enabled && values.payment_providers.some((provider) => provider === 'STRIPE' || provider === 'PAYU'))
                 ? 72
                 : values.payment_link_expiry_hours,
             invoice_notes: isEmptyHtml(values.invoice_notes) ? null : values.invoice_notes,
@@ -234,7 +234,7 @@ export const PaymentAndInvoicingSettings = () => {
                                             checked={form.values.payment_links_enabled}
                                             {...form.getInputProps('payment_links_enabled', {type: 'checkbox'})}
                                         />
-                                        {(form.values.payment_links_enabled && form.values.payment_providers?.includes('STRIPE')) && (
+                                        {(form.values.payment_links_enabled && form.values.payment_providers?.some((provider) => provider === 'STRIPE' || provider === 'PAYU')) && (
                                             <NumberInput
                                                 className={classes.holdHours}
                                                 styles={{wrapper: {maxWidth: 200}}}

@@ -130,7 +130,9 @@ class UpdateEventSettingsDTO extends BaseDTO
             price_display_mode: PriceDisplayMode::INCLUSIVE,
 
             // Payment defaults
-            payment_providers: [PaymentProviders::STRIPE->value],
+            // Fork: a new event defaults to the methods this deployment can actually take
+            // (bank transfer + PayU) instead of Stripe, which is not offered here (CHANGES.md v12).
+            payment_providers: [PaymentProviders::OFFLINE->value, PaymentProviders::PAYU->value],
             offline_payment_instructions: null,
 
             // Invoice defaults

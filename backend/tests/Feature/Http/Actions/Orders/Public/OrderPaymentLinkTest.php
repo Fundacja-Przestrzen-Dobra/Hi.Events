@@ -82,6 +82,41 @@ class OrderPaymentLinkTest extends TestCase
         });
     }
 
+    public function test_a_payu_event_can_share_a_link_without_stripe(): void
+    {
+        Mail::fake();
+
+        // This fork pays online with PayU; upstream gates the link on Stripe (CHANGES.md v8).
+        DB::table('event_settings')->where('event_id', $this->eventId)->update([
+            'payment_providers' => json_encode(['PAYU', 'OFFLINE']),
+        ]);
+
+        $response = $this->postAsOwner($this->linkUrl())->assertOk();
+
+        $order = DB::table('orders')->where('id', $this->orderId)->first();
+        $this->assertNotNull($order->payment_link_created_at);
+        $this->assertEqualsWithDelta(
+            now()->addHours(72)->getTimestamp(),
+            Carbon::parse($order->reserved_until, 'UTC')->getTimestamp(),
+            5,
+        );
+        $this->assertSame($this->expectedUrl(), $response->json('data.payment_link_url'));
+        Mail::assertQueued(OrderPaymentLinkMail::class);
+    }
+
+    public function test_a_link_still_needs_an_online_provider_besides_the_transfer(): void
+    {
+        Mail::fake();
+
+        // A transfer-only event cannot take an online payment, so the hold would be pointless.
+        DB::table('event_settings')->where('event_id', $this->eventId)->update([
+            'payment_providers' => json_encode(['OFFLINE']),
+        ]);
+
+        $this->postAsOwner($this->linkUrl())->assertStatus(409);
+        Mail::assertNothingQueued();
+    }
+
     public function test_creating_the_link_again_returns_the_same_link_without_extending_the_hold(): void
     {
         Mail::fake();

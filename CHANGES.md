@@ -2,7 +2,7 @@
 
 Fork: `Fundacja-Przestrzen-Dobra/Hi.Events`
 Upstream: `HiEventsDev/hi.events`
-Baseline: **`v2.0.0`** (`5c7f34876f6d0c881a37a76f6caa583da5779d0e`, 2026-10-23)
+Baseline: **`v2.2.0`** (merged 2026-11-18; previous baseline `v2.0.0`, `5c7f34876f6d0c881a37a76f6caa583da5779d0e`)
 
 Only deployment files and our own modules live on `malzenstwo`. Application code stays untouched unless a change is
 unavoidable; every change to an upstream file is listed here with its reason, so bumping the pinned release stays cheap.
@@ -201,6 +201,70 @@ Also in this change:
 - Event/page colours live in the database (`event_settings.homepage_*`, `homepage_theme_settings`,
   `ticket_design_settings`, `organizer_settings.homepage_theme_settings`); they now carry the portal's
   navy and muted gold, so the public event page matches malzenstwo.org.
+
+## v11 — upstream v2.2.0 (merge, 2026-11-18)
+
+Upstream shipped v2.1.0 and v2.2.0 on top of our baseline: 677 files, +99k lines. The two
+releases bring a rebuilt registration-questions builder (conditional questions, field
+locking, a question logic module), offline-payment reporting with payment links, a reworked
+order/checkout flow, an MCP server, and a Czech translation.
+
+**How:** merged, not rebased. Rebasing our 22 commits would have meant 22 conflict
+resolutions; a merge resolves the same files once and keeps the history readable. Merge
+commit `3b0feee0`, branch `update/v2.2.0`.
+
+Files that both sides touched (the whole conflict surface, and what we kept):
+
+| file | resolution |
+| --- | --- |
+| `frontend/src/api/order.client.ts` | both sides only added methods — ours (`createProviderPaymentIntent`, `findProviderPaymentStatus`) and theirs (`createPaymentLink`, `reportOfflinePayment`) |
+| `frontend/src/components/routes/product-widget/Payment/index.tsx` | upstream's naming (`checkoutEvent`) and `isPayingLater`; our flags, PayU method card and PayU/Przelew tabs. Their `isEventFetched` is gone from the file, so the "no methods" guard uses `isOrderFetched`; their offline component's new `isPayer` prop replaces our `event` prop |
+| `frontend/src/components/routes/product-widget/CollectInformation/index.tsx` | upstream's `LockedFields` wrapper **and** our separator plus "optional" line above the marketing opt-in |
+| `frontend/src/locales.ts` | upstream's locale list (adds `cs`) plus our `getConfig` import |
+| `.gitignore` | both rulesets: `/.env`, `/.env.local` here, `.cloudflare/` upstream |
+
+**Consequences worth knowing:**
+
+- Payment links (v2.2.0) are gated on Stripe in the checkout; this deployment offers PayU
+  and bank transfer, so the flow stays dormant. Enabling it later is a one-line change
+  (`canCreatePaymentLink` checking `PAYU`), not a rewrite.
+- Stripe's code path is still present but unreachable, exactly as before the merge.
+- Upstream's new conditional-question machinery is unreachable only if we turn it off in
+  settings; on by default it works as shipped, and our checkout keeps our consent copy.
+- The image tag is now `hi.events-malzenstwo:v2.2.0-payu` (compose files updated).
+
+**Verified:** image builds from source; backend unit suite passes inside the built image;
+the instance boots with the v2.2.0 migrations, serves the public API the portal reads, and
+the checkout still offers PayU and bank transfer.
+
+## v12 — „ktoś inny płaci" działa z PayU, bez Stripe (2026-11-18)
+
+v2.2.0 przynosi linki do płatności: kupujący na kroku płatności może wysłać link, a **ktoś inny
+płaci za jego zamówienie** — z własnego telefonu, bez logowania i bez ciasteczka zakupu (link daje
+płatnikowi własną sesję). Upstream zamyka ten przepływ na Stripe, którego ta instancja nie oferuje,
+więc u nas wejście „wyślij link" było niewidoczne. Zmiana podmienia „online" ze Stripe na „Stripe
+albo PayU" i nic więcej.
+
+Zmodyfikowane pliki upstreamu:
+
+| plik | zmiana |
+| --- | --- |
+| `backend/app/Services/Application/Handlers/Order/Public/CreateOrderPaymentLinkPublicHandler.php` | bramka „zamówienie z rezerwacją wymaga dostawcy online" pyta teraz `hasOnlineProvider()` (Stripe **albo** PayU) zamiast wyłącznie Stripe |
+| `frontend/src/components/routes/product-widget/Payment/index.tsx` | `canCreatePaymentLink` liczy dostawcę online tak samo; wejście „wyślij link" jest widoczne przy PayU |
+| `frontend/src/components/routes/event/Settings/Sections/PaymentSettings/index.tsx` | przełącznik „let someone else pay" i pole godzin trzymania miejsc działają przy PayU (dwie bramki na Stripe) |
+| `backend/app/Services/Domain/Event/CreateEventService.php` | nowe wydarzenie domyślnie dostaje `[OFFLINE, PAYU]` zamiast `[STRIPE]` — martwy Stripe dawał checkout z komunikatem „brak dostępnych metod płatności" |
+| `backend/app/Services/Application/Handlers/EventSettings/DTO/UpdateEventSettingsDTO.php` | ten sam domyślny zestaw metod w DTO |
+
+Czego **nie** zmieniamy: upstreamowe `assertLinksAvailable()` nadal wymaga włączonego przełącznika
+i dostawcy przelewu (link to „wyślij komuś link do zapłaty"), a ścieżka Stripe zostaje w kodzie,
+tylko nieosiągalna z UI. Przełącznik pozostaje **wyłączony domyślnie** — włącza go organizator per
+wydarzenie, więc żadne istniejące wydarzenie nie zmienia zachowania.
+
+**Testy:** `backend/tests/Feature/Http/Actions/Orders/Public/OrderPaymentLinkTest.php` — dwa nowe
+przypadki: wydarzenie z PayU tworzy link i wysyła mail; wydarzenie tylko z przelewem nadal dostaje
+409. Cały plik: 32 testy, 93 asercje, zielone. Ścieżkę pieniędzy osoby płacącej pokrywa test e2e
+portalu `e2e/tests/payment-link.spec.ts` (link otwierany w **nowym kontekście przeglądarki**, żeby
+nie sprawdzić przypadkiem sesji kupującego).
 
 ## Where the end-to-end tests live
 

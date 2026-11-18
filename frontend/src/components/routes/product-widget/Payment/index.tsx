@@ -41,12 +41,16 @@ const Payment = () => {
     const paymentLinkModal = usePaymentLinkModal();
     const isPaymentLinkPayer = !!order?.is_payment_link_payer;
     const hasPaymentLink = !!order?.payment_link_url;
+    // Upstream wants Stripe here; this deployment pays online with PayU (CHANGES.md v12).
+    const hasOnlineProvider = (checkoutEvent?.settings?.payment_providers ?? []).some(
+        (provider) => provider === 'STRIPE' || provider === 'PAYU',
+    );
     const canCreatePaymentLink = !hasPaymentLink
         && !isPaymentLinkPayer
         && !!order?.is_payment_required
         && !!checkoutEvent?.settings?.payment_links_enabled
         && !!checkoutEvent?.settings?.payment_providers?.includes('OFFLINE')
-        && !!checkoutEvent?.settings?.payment_providers?.includes('STRIPE');
+        && hasOnlineProvider;
 
     // This deployment offers PayU (online) and direct bank transfer only. Stripe is
     // not offered in the UI; its code path stays in place but unreachable.

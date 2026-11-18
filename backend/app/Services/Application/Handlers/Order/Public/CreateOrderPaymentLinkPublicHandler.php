@@ -117,7 +117,7 @@ class CreateOrderPaymentLinkPublicHandler
     {
         $this->assertLinksAvailable($settings);
 
-        if (! collect($settings->getPaymentProviders())->contains(PaymentProviders::STRIPE->value)) {
+        if (! $this->hasOnlineProvider($settings)) {
             throw new ResourceConflictException(__('Payment links are not available for this event'));
         }
 
@@ -144,6 +144,19 @@ class CreateOrderPaymentLinkPublicHandler
         if (! $offlineEnabled || ! $settings->getPaymentLinksEnabled()) {
             throw new ResourceConflictException(__('Payment links are not available for this event'));
         }
+    }
+
+    /**
+     * A link on a reserved order means the person paying completes the payment online, so the
+     * event has to offer an online provider. Upstream checks Stripe; this fork offers PayU there
+     * (see CHANGES.md v12), so both count as "online".
+     */
+    private function hasOnlineProvider(EventSettingDomainObject $settings): bool
+    {
+        $providers = collect($settings->getPaymentProviders());
+
+        return $providers->contains(PaymentProviders::STRIPE->value)
+            || $providers->contains(PaymentProviders::PAYU->value);
     }
 
     private function createLinkForPlacedOrder(OrderDomainObject $order): OrderDomainObject

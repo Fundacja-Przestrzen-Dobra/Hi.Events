@@ -9,7 +9,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.all-in-one
-    image: hi.events-malzenstwo:v2.0.0-payu
+    image: hi.events-malzenstwo:v2.2.0-payu
     restart: unless-stopped
     ports:
       - "0.0.0.0:8810:80"
